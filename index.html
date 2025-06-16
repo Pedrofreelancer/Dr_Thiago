@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Médica - Dr. Thiago</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .form-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+        }
+
+        .form-section h2 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #34495e;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .agenda-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .agenda-section h2 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #27ae60;
+            padding-bottom: 10px;
+        }
+
+        .date-selector {
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .date-selector input {
+            padding: 10px 20px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .agenda-grid {
+            display: grid;
+            gap: 10px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .time-slot {
+            display: grid;
+            grid-template-columns: 100px 1fr auto;
+            align-items: center;
+            padding: 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .time-slot.occupied {
+            background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+            border-color: #27ae60;
+        }
+
+        .time-slot.available {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-color: #6c757d;
+        }
+
+        .time-slot:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .time-label {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .patient-info {
+            padding-left: 15px;
+        }
+
+        .patient-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .patient-phone {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .empty-slot {
+            color: #95a5a6;
+            font-style: italic;
+            padding-left: 15px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .time-slot {
+                grid-template-columns: 80px 1fr auto;
+                padding: 10px;
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.success {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+        }
+
+        .notification.error {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🩺 Dr. Thiago</h1>
+            <p>Sistema de Agendamento de Consultas</p>
+        </div>
+
+        <div class="main-content">
+            <div class="form-section">
+                <h2>Novo Agendamento</h2>
+                <form id="appointmentForm">
+                    <div class="form-group">
+                        <label for="patientName">Nome do Paciente:</label>
+                        <input type="text" id="patientName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="patientPhone">Telefone:</label>
+                        <input type="tel" id="patientPhone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="appointmentDate">Data:</label>
+                        <input type="date" id="appointmentDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="appointmentTime">Horário:</label>
+                        <select id="appointmentTime" required>
+                            <option value="">Selecione um horário</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn">Agendar Consulta</button>
+                    <button type="button" class="btn btn-danger" onclick="clearForm()">Limpar</button>
+                </form>
+            </div>
+
+            <div class="agenda-section">
+                <h2>Agenda do Dia</h2>
+                <div class="date-selector">
+                    <input type="date" id="viewDate" onchange="loadAgenda()">
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalSlots">0</div>
+                        <div class="stat-label">Total de Horários</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="occupiedSlots">0</div>
+                        <div class="stat-label">Agendamentos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="availableSlots">0</div>
+                        <div class="stat-label">Disponíveis</div>
+                    </div>
+                </div>
+
+                <div class="agenda-grid" id="agendaGrid">
+                    <!-- Slots serão gerados pelo JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados dos agendamentos (em memória)
+        let appointments = {};
+
+        // Horários de funcionamento (8:00 às 18:00, intervalos de 30 min)
+        const workingHours = [];
+        for (let hour = 8; hour < 18; hour++) {
+            workingHours.push(`${hour.toString().padStart(2, '0')}:00`);
+            workingHours.push(`${hour.toString().padStart(2, '0')}:30`);
+        }
+
+        // Inicializar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('appointmentDate').value = today;
+            document.getElementById('viewDate').value = today;
+            
+            populateTimeSlots();
+            loadAgenda();
+        });
+
+        // Preencher opções de horário no formulário
+        function populateTimeSlots() {
+            const timeSelect = document.getElementById('appointmentTime');
+            timeSelect.innerHTML = '<option value="">Selecione um horário</option>';
+            
+            workingHours.forEach(time => {
+                const option = document.createElement('option');
+                option.value = time;
+                option.textContent = time;
+                timeSelect.appendChild(option);
+            });
+        }
+
+        // Atualizar horários disponíveis baseado na data selecionada
+        document.getElementById('appointmentDate').addEventListener('change', function() {
+            const selectedDate = this.value;
+            const timeSelect = document.getElementById('appointmentTime');
+            
+            timeSelect.innerHTML = '<option value="">Selecione um horário</option>';
+            
+            workingHours.forEach(time => {
+                const dateTime = `${selectedDate}_${time}`;
+                if (!appointments[dateTime]) {
+                    const option = document.createElement('option');
+                    option.value = time;
+                    option.textContent = time;
+                    timeSelect.appendChild(option);
+                }
+            });
+        });
+
+        // Processar formulário de agendamento
+        document.getElementById('appointmentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('patientName').value;
+            const phone = document.getElementById('patientPhone').value;
+            const date = document.getElementById('appointmentDate').value;
+            const time = document.getElementById('appointmentTime').value;
+            
+            if (!name || !phone || !date || !time) {
+                showNotification('Por favor, preencha todos os campos!', 'error');
+                return;
+            }
+            
+            const dateTime = `${date}_${time}`;
+            
+            if (appointments[dateTime]) {
+                showNotification('Este horário já está ocupado!', 'error');
+                return;
+            }
+            
+            appointments[dateTime] = {
+                name: name,
+                phone: phone,
+                date: date,
+                time: time
+            };
+            
+            showNotification('Agendamento realizado com sucesso!', 'success');
+            clearForm();
+            
+            // Atualizar a agenda se estiver visualizando o mesmo dia
+            if (document.getElementById('viewDate').value === date) {
+                loadAgenda();
+            }
+            
+            // Atualizar horários disponíveis
+            document.getElementById('appointmentDate').dispatchEvent(new Event('change'));
+        });
+
+        // Carregar agenda do dia selecionado
+        function loadAgenda() {
+            const selectedDate = document.getElementById('viewDate').value;
+            const agendaGrid = document.getElementById('agendaGrid');
+            
+            agendaGrid.innerHTML = '';
+            
+            let totalSlots = workingHours.length;
+            let occupiedCount = 0;
+            
+            workingHours.forEach(time => {
+                const dateTime = `${selectedDate}_${time}`;
+                const appointment = appointments[dateTime];
+                
+                const slotDiv = document.createElement('div');
+                slotDiv.className = `time-slot ${appointment ? 'occupied' : 'available'}`;
+                
+                if (appointment) {
+                    occupiedCount++;
+                    slotDiv.innerHTML = `
+                        <div class="time-label">${time}</div>
+                        <div class="patient-info">
+                            <div class="patient-name">${appointment.name}</div>
+                            <div class="patient-phone">📞 ${appointment.phone}</div>
+                        </div>
+                        <button class="btn btn-danger btn-small" onclick="cancelAppointment('${dateTime}')">
+                            Cancelar
+                        </button>
+                    `;
+                } else {
+                    slotDiv.innerHTML = `
+                        <div class="time-label">${time}</div>
+                        <div class="empty-slot">Horário disponível</div>
+                        <div></div>
+                    `;
+                }
+                
+                agendaGrid.appendChild(slotDiv);
+            });
+            
+            // Atualizar estatísticas
+            document.getElementById('totalSlots').textContent = totalSlots;
+            document.getElementById('occupiedSlots').textContent = occupiedCount;
+            document.getElementById('availableSlots').textContent = totalSlots - occupiedCount;
+        }
+
+        // Cancelar agendamento
+        function cancelAppointment(dateTime) {
+            if (confirm('Tem certeza que deseja cancelar este agendamento?')) {
+                delete appointments[dateTime];
+                showNotification('Agendamento cancelado!', 'success');
+                loadAgenda();
+                
+                // Atualizar horários disponíveis se for o mesmo dia
+                const [date] = dateTime.split('_');
+                if (document.getElementById('appointmentDate').value === date) {
+                    document.getElementById('appointmentDate').dispatchEvent(new Event('change'));
+                }
+            }
+        }
+
+        // Limpar formulário
+        function clearForm() {
+            document.getElementById('appointmentForm').reset();
+            document.getElementById('appointmentDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('appointmentDate').dispatchEvent(new Event('change'));
+        }
+
+        // Mostrar notificação
+        function showNotification(message, type) {
+            // Remove notificação existente
+            const existing = document.querySelector('.notification');
+            if (existing) {
+                existing.remove();
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Mostrar com animação
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            // Remover após 3 segundos
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
