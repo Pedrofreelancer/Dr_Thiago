@@ -46,6 +46,19 @@
             opacity: 0.9;
         }
 
+        .save-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 1000;
+        }
+
         .main-content {
             display: grid;
             grid-template-columns: 1fr 2fr;
@@ -256,13 +269,13 @@
         .notification {
             position: fixed;
             top: 20px;
-            right: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
             padding: 15px 25px;
             border-radius: 8px;
             color: white;
             font-weight: 600;
             z-index: 1000;
-            transform: translateX(400px);
             transition: transform 0.3s ease;
         }
 
@@ -275,11 +288,15 @@
         }
 
         .notification.show {
-            transform: translateX(0);
+            transform: translateX(-50%) translateY(0);
         }
     </style>
 </head>
 <body>
+    <div class="save-status">
+        💾 Dados Salvos Automaticamente
+    </div>
+
     <div class="container">
         <div class="header">
             <h1>🩺 Dr. Thiago</h1>
@@ -356,63 +373,8 @@
     </div>
 
     <script>
-        // Dados dos agendamentos (salvos no navegador)
-        let appointments = loadAppointments();
-
-        // Funções para salvar/carregar dados
-        function saveAppointments() {
-            try {
-                localStorage.setItem('drThiagoAppointments', JSON.stringify(appointments));
-            } catch (error) {
-                console.warn('Não foi possível salvar os dados:', error);
-            }
-        }
-
-        function loadAppointments() {
-            try {
-                const saved = localStorage.getItem('drThiagoAppointments');
-                return saved ? JSON.parse(saved) : {};
-            } catch (error) {
-                console.warn('Não foi possível carregar os dados:', error);
-                return {};
-            }
-        }
-
-        function exportData() {
-            const dataStr = JSON.stringify(appointments, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `agenda_dr_thiago_${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            showNotification('Dados exportados com sucesso!', 'success');
-        }
-
-        function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-                    if (confirm('Isso irá substituir todos os agendamentos existentes. Continuar?')) {
-                        appointments = importedData;
-                        saveAppointments();
-                        loadAgenda();
-                        showNotification('Dados importados com sucesso!', 'success');
-                    }
-                } catch (error) {
-                    showNotification('Erro ao importar dados. Arquivo inválido.', 'error');
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = ''; // Reset file input
-        }
+        // Dados dos agendamentos (salvos permanentemente no navegador)
+        let appointments = {};
 
         // Horários de funcionamento (8:00 às 18:00, intervalos de 30 min)
         const workingHours = [];
@@ -421,14 +383,55 @@
             workingHours.push(`${hour.toString().padStart(2, '0')}:30`);
         }
 
+        // Funções para salvar/carregar dados permanentemente
+        function saveAppointments() {
+            try {
+                const data = JSON.stringify(appointments);
+                window.localStorage.setItem('drThiagoAgenda', data);
+                console.log('✅ Dados salvos com sucesso!');
+                return true;
+            } catch (error) {
+                console.error('❌ Erro ao salvar:', error);
+                showNotification('Erro ao salvar dados!', 'error');
+                return false;
+            }
+        }
+
+        function loadAppointments() {
+            try {
+                const data = window.localStorage.getItem('drThiagoAgenda');
+                if (data) {
+                    appointments = JSON.parse(data);
+                    console.log('✅ Dados carregados:', Object.keys(appointments).length, 'agendamentos');
+                } else {
+                    appointments = {};
+                    console.log('📝 Iniciando com agenda vazia');
+                }
+                return true;
+            } catch (error) {
+                console.error('❌ Erro ao carregar:', error);
+                appointments = {};
+                return false;
+            }
+        }
+
         // Inicializar a página
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Iniciando sistema...');
+            
+            // Carregar dados salvos
+            loadAppointments();
+            
+            // Configurar datas padrão
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('appointmentDate').value = today;
             document.getElementById('viewDate').value = today;
             
+            // Preencher horários e carregar agenda
             populateTimeSlots();
             loadAgenda();
+            
+            console.log('✅ Sistema iniciado com sucesso!');
         });
 
         // Preencher opções de horário no formulário
@@ -466,8 +469,8 @@
         document.getElementById('appointmentForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const name = document.getElementById('patientName').value;
-            const phone = document.getElementById('patientPhone').value;
+            const name = document.getElementById('patientName').value.trim();
+            const phone = document.getElementById('patientPhone').value.trim();
             const date = document.getElementById('appointmentDate').value;
             const time = document.getElementById('appointmentTime').value;
             
@@ -483,25 +486,28 @@
                 return;
             }
             
+            // Salvar agendamento
             appointments[dateTime] = {
                 name: name,
                 phone: phone,
                 date: date,
-                time: time
+                time: time,
+                created: new Date().toISOString()
             };
             
-            saveAppointments(); // Salvar automaticamente
-            
-            showNotification('Agendamento realizado com sucesso!', 'success');
-            clearForm();
-            
-            // Atualizar a agenda se estiver visualizando o mesmo dia
-            if (document.getElementById('viewDate').value === date) {
-                loadAgenda();
+            // Salvar no navegador
+            if (saveAppointments()) {
+                showNotification('Agendamento realizado e salvo com sucesso!', 'success');
+                clearForm();
+                
+                // Atualizar a agenda se estiver visualizando o mesmo dia
+                if (document.getElementById('viewDate').value === date) {
+                    loadAgenda();
+                }
+                
+                // Atualizar horários disponíveis
+                document.getElementById('appointmentDate').dispatchEvent(new Event('change'));
             }
-            
-            // Atualizar horários disponíveis
-            document.getElementById('appointmentDate').dispatchEvent(new Event('change'));
         });
 
         // Carregar agenda do dia selecionado
@@ -554,16 +560,59 @@
         function cancelAppointment(dateTime) {
             if (confirm('Tem certeza que deseja cancelar este agendamento?')) {
                 delete appointments[dateTime];
-                saveAppointments(); // Salvar automaticamente
-                showNotification('Agendamento cancelado!', 'success');
-                loadAgenda();
                 
-                // Atualizar horários disponíveis se for o mesmo dia
-                const [date] = dateTime.split('_');
-                if (document.getElementById('appointmentDate').value === date) {
-                    document.getElementById('appointmentDate').dispatchEvent(new Event('change'));
+                if (saveAppointments()) {
+                    showNotification('Agendamento cancelado!', 'success');
+                    loadAgenda();
+                    
+                    // Atualizar horários disponíveis se for o mesmo dia
+                    const [date] = dateTime.split('_');
+                    if (document.getElementById('appointmentDate').value === date) {
+                        document.getElementById('appointmentDate').dispatchEvent(new Event('change'));
+                    }
                 }
             }
+        }
+
+        // Exportar dados
+        function exportData() {
+            const dataStr = JSON.stringify(appointments, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `agenda_dr_thiago_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            showNotification('Dados exportados com sucesso!', 'success');
+        }
+
+        // Importar dados
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (confirm('Isso irá mesclar os dados importados com os existentes. Continuar?')) {
+                        // Mesclar dados
+                        Object.assign(appointments, importedData);
+                        
+                        if (saveAppointments()) {
+                            loadAgenda();
+                            showNotification('Dados importados com sucesso!', 'success');
+                        }
+                    }
+                } catch (error) {
+                    showNotification('Erro ao importar dados. Arquivo inválido.', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
         }
 
         // Limpar todos os dados
@@ -571,10 +620,12 @@
             if (confirm('ATENÇÃO: Isso irá apagar TODOS os agendamentos permanentemente. Tem certeza?')) {
                 if (confirm('Esta ação não pode ser desfeita. Confirma a exclusão de todos os dados?')) {
                     appointments = {};
-                    saveAppointments();
-                    loadAgenda();
-                    document.getElementById('appointmentDate').dispatchEvent(new Event('change'));
-                    showNotification('Todos os dados foram apagados!', 'success');
+                    
+                    if (saveAppointments()) {
+                        loadAgenda();
+                        document.getElementById('appointmentDate').dispatchEvent(new Event('change'));
+                        showNotification('Todos os dados foram apagados!', 'success');
+                    }
                 }
             }
         }
@@ -613,6 +664,18 @@
                 }, 300);
             }, 3000);
         }
+
+        // Salvar automaticamente a cada 30 segundos (backup extra)
+        setInterval(() => {
+            if (Object.keys(appointments).length > 0) {
+                saveAppointments();
+            }
+        }, 30000);
+
+        // Salvar antes de fechar a página
+        window.addEventListener('beforeunload', function() {
+            saveAppointments();
+        });
     </script>
 </body>
 </html>
